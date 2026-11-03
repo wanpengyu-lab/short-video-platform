@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}榜单列表 - 短视频数据平台{% endblock %}
+{% block page_name %}短视频榜单列表{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-title"><i class="bi bi-list-ul"></i> 榜单列表</div>
+    <div class="page-desc">支持关键词、发布时间区间、热度排序的组合检索</div>
+</div>
+
+<!-- ===== 条件查询表单 ===== -->
+<div class="filter-card">
+    <form method="GET" action="{{ url_for('video.video_list') }}" class="row g-2 align-items-end">
+        <div class="col-lg-3 col-md-6">
+            <label class="form-label">关键词</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control" name="keyword"
+                       value="{{ keyword }}" placeholder="搜索标题或作者">
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-3">
+            <label class="form-label">发布日期（起）</label>
+            <input type="date" class="form-control" name="start_date" value="{{ start_date }}">
+        </div>
+        <div class="col-lg-2 col-md-3">
+            <label class="form-label">发布日期（止）</label>
+            <input type="date" class="form-control" name="end_date" value="{{ end_date }}">
+        </div>
+        <div class="col-lg-2 col-md-4">
+            <label class="form-label">热度排序维度</label>
+            <select class="form-select" name="order_by">
+                <option value="like_count" {% if order_by == 'like_count' %}selected{% endif %}>点赞数</option>
+                <option value="play_count" {% if order_by == 'play_count' %}selected{% endif %}>播放量</option>
+                <option value="comment_count" {% if order_by == 'comment_count' %}selected{% endif %}>评论数</option>
+                <option value="collect_count" {% if order_by == 'collect_count' %}selected{% endif %}>收藏数</option>
+                <option value="publish_time" {% if order_by == 'publish_time' %}selected{% endif %}>发布时间</option>
+            </select>
+        </div>
+        <div class="col-lg-1 col-md-2">
+            <label class="form-label">方向</label>
+            <select class="form-select" name="order_dir">
+                <option value="desc" {% if order_dir == 'desc' %}selected{% endif %}>降序</option>
+                <option value="asc" {% if order_dir == 'asc' %}selected{% endif %}>升序</option>
+            </select>
+        </div>
+        <div class="col-lg-2 col-md-12">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search"></i> 查询
+            </button>
+            <a href="{{ url_for('video.video_list') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-counterclockwise"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- ===== 数据表格 ===== -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-table"></i>数据明细</span>
+        <span class="muted-text">
+            共 <strong style="color:var(--primary)">{{ page_info.total }}</strong> 条记录
+            · 第 {{ page_info.page }} / {{ page_info.pages or 1 }} 页
+        </span>
+    </div>
+
+    {% if videos %}
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>封面</th>
+                    <th>视频标题</th>
+                    <th>作者</th>
+                    <th class="text-end">播放量</th>
+                    <th class="text-end">点赞数</th>
+                    <th class="text-end">评论数</th>
+                    <th class="text-end">收藏数</th>
+                    <th>发布时间</th>
+                    {% if session.get('role') == 'admin' %}
+                    <th style="width:110px">操作</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for video in videos %}
+                <tr>
+                    <td class="muted-text">#{{ video.id }}</td>
+                    <td style="min-width:150px">
+                        {% if video.cover_url %}
+                        <img src="{{ video.cover_url }}" alt="封面" class="cover-thumb" loading="lazy"
+                             onerror="this.outerHTML='<div class=\'cover-empty\'><i class=\'bi bi-image\'></i></div>'">
+                        <div style="margin-top:5px;">
+                            <a href="{{ video.cover_url }}" target="_blank" rel="noopener"
+                               class="cover-link" title="{{ video.cover_url }}">
+                                <i class="bi bi-box-arrow-up-right"></i> 封面链接
+                            </a>
+                        </div>
+                        {% else %}
+                        <div class="cover-empty"><i class="bi bi-image"></i></div>
+                        <div style="margin-top:5px;"><span class="muted-text">无链接</span></div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="ellipsis-cell" title="{{ video.title }}">{{ video.title }}</span>
+                    </td>
+                    <td>
+                        {% if video.author_name %}
+                        <i class="bi bi-person-badge" style="color:var(--text-light)"></i>
+                        {{ video.author_name }}
+                        {% else %}<span class="muted-text">—</span>{% endif %}
+                    </td>
+                    <td class="text-end num-cell">{{ "{:,.0f}".format(video.play_count) }}</td>
+                    <td class="text-end num-cell">{{ "{:,.0f}".format(video.like_count) }}</td>
+                    <td class="text-end num-cell">{{ "{:,.0f}".format(video.comment_count) }}</td>
+                    <td class="text-end num-cell">{{ "{:,.0f}".format(video.collect_count) }}</td>
+                    <td class="muted-text">
+                        {% if video.publish_time %}{{ video.publish_time }}{% else %}—{% endif %}
+                    </td>
+                    {% if session.get('role') == 'admin' %}
+                    <td>
+                        <a href="{{ url_for('video.edit_video', video_id=video.id) }}"
+                           class="op-btn op-edit" title="编辑">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <form method="POST" action="{{ url_for('video.delete_video', video_id=video.id) }}"
+                              style="display:inline;"
+                              onsubmit="return confirm('确定要删除这条数据吗？')">
+                            <button type="submit" class="op-btn op-del" title="删除">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ===== 分页导航 ===== -->
+    {% if page_info.pages > 1 %}
+    <div class="card-footer">
+        <nav class="d-flex justify-content-between align-items-center">
+            <span class="muted-text">
+                显示第 {{ (page_info.page - 1) * page_info.per_page + 1 }} -
+                {{ [page_info.page * page_info.per_page, page_info.total]|min }} 条
+            </span>
+            <ul class="pagination mb-0">
+                <li class="page-item {% if page_info.page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('video.video_list', page=page_info.page-1,
+                        keyword=keyword, start_date=start_date, end_date=end_date,
+                        order_by=order_by, order_dir=order_dir) }}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+
+                {% if page_info.page > 4 %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('video.video_list', page=1,
+                    keyword=keyword, start_date=start_date, end_date=end_date,
+                    order_by=order_by, order_dir=order_dir) }}">1</a></li>
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% endif %}
+
+                {% for p in range(1, page_info.pages + 1) %}
+                {% if p >= page_info.page - 3 and p <= page_info.page + 3 %}
+                <li class="page-item {% if p == page_info.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('video.video_list', page=p,
+                        keyword=keyword, start_date=start_date, end_date=end_date,
+                        order_by=order_by, order_dir=order_dir) }}">{{ p }}</a>
+                </li>
+                {% endif %}
+                {% endfor %}
+
+                {% if page_info.page < page_info.pages - 3 %}
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+                <li class="page-item"><a class="page-link" href="{{ url_for('video.video_list', page=page_info.pages,
+                    keyword=keyword, start_date=start_date, end_date=end_date,
+                    order_by=order_by, order_dir=order_dir) }}">{{ page_info.pages }}</a></li>
+                {% endif %}
+
+                <li class="page-item {% if page_info.page >= page_info.pages %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('video.video_list', page=page_info.page+1,
+                        keyword=keyword, start_date=start_date, end_date=end_date,
+                        order_by=order_by, order_dir=order_dir) }}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- 空状态 -->
+    <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-inbox"></i></div>
+        <div class="empty-text">暂无符合条件的数据</div>
+        <div class="empty-hint">请先执行采集任务获取短视频热度数据</div>
+        <a href="{{ url_for('task.task_list') }}" class="btn btn-primary btn-sm" style="margin-top:16px;">
+            <i class="bi bi-gear"></i> 前往任务管理
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

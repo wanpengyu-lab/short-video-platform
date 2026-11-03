@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}采集任务管理 - 短视频数据平台{% endblock %}
+{% block page_name %}采集任务管理{% endblock %}
+
+{% block content %}
+<div class="page-head d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div>
+        <div class="page-title"><i class="bi bi-gear"></i> 采集任务管理</div>
+        <div class="page-desc">控制采集任务启停，配置定时调度规则</div>
+    </div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+        <i class="bi bi-plus-lg"></i> 新增任务
+    </button>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-list-task"></i>任务列表</span>
+        <span class="muted-text">共 {{ tasks|length }} 个任务</span>
+    </div>
+
+    {% if tasks %}
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th style="width:60px">ID</th>
+                    <th>任务名称</th>
+                    <th>目标链接</th>
+                    <th>定时规则</th>
+                    <th>当前状态</th>
+                    <th>上次执行</th>
+                    <th style="width:210px">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for task in tasks %}
+                <tr>
+                    <td class="muted-text">#{{ task.id }}</td>
+                    <td><strong>{{ task.task_name }}</strong></td>
+                    <td>
+                        <span class="ellipsis-cell muted-text" title="{{ task.target_url }}"
+                              style="max-width:240px">{{ task.target_url }}</span>
+                    </td>
+                    <td><code class="cron-code">{{ task.cron_rule }}</code></td>
+                    <td>
+                        {% if task.status == '运行' %}
+                        <span class="badge badge-running">运行中</span>
+                        {% else %}
+                        <span class="badge badge-stopped">已停止</span>
+                        {% endif %}
+                    </td>
+                    <td class="muted-text">
+                        {% if task.last_run %}{{ task.last_run }}{% else %}未执行{% endif %}
+                    </td>
+                    <td>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            {% if task.status == '运行' %}
+                            <form method="POST" action="{{ url_for('task.stop_task', task_id=task.id) }}"
+                                  style="margin:0">
+                                <button type="submit" class="op-btn op-stop" title="停止任务">
+                                    <i class="bi bi-stop-fill"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                            <form method="POST" action="{{ url_for('task.start_task', task_id=task.id) }}"
+                                  style="margin:0">
+                                <button type="submit" class="op-btn op-start" title="启动任务">
+                                    <i class="bi bi-play-fill"></i>
+                                </button>
+                            </form>
+                            {% endif %}
+
+                            <form method="POST" action="{{ url_for('task.run_now', task_id=task.id) }}"
+                                  style="margin:0" id="runForm{{ task.id }}">
+                                <button type="submit" class="op-btn op-run" title="立即执行一次"
+                                        onclick="markRunning(this, '{{ task.task_name }}')">
+                                    <i class="bi bi-lightning-fill"></i>
+                                </button>
+                            </form>
+
+                            <form method="POST" action="{{ url_for('task.delete_task', task_id=task.id) }}"
+                                  style="margin:0"
+                                  onsubmit="return confirm('确定要删除任务「{{ task.task_name }}」吗？')">
+                                <button type="submit" class="op-btn op-del" title="删除任务">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i class="bi bi-inboxes"></i></div>
+        <div class="empty-text">还没有配置采集任务</div>
+        <div class="empty-hint">点击右上角"新增任务"开始配置</div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ===== Cron 说明卡片 ===== -->
+<div class="card" style="margin-top:20px;">
+    <div class="card-header"><i class="bi bi-info-circle"></i> 常用定时规则参考</div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <code class="cron-code">0 */2 * * *</code>
+                <div class="muted-text" style="margin-top:5px">每 2 小时执行一次</div>
+            </div>
+            <div class="col-md-3">
+                <code class="cron-code">0 0 * * *</code>
+                <div class="muted-text" style="margin-top:5px">每天 0 点执行</div>
+            </div>
+            <div class="col-md-3">
+                <code class="cron-code">0 */6 * * *</code>
+                <div class="muted-text" style="margin-top:5px">每 6 小时执行一次</div>
+            </div>
+            <div class="col-md-3">
+                <code class="cron-code">0 9 * * 1-5</code>
+                <div class="muted-text" style="margin-top:5px">工作日每天 9 点执行</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 新增任务弹窗 ===== -->
+<div class="modal fade" id="addTaskModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-plus-circle"></i> 新增采集任务</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('task.add_task') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">任务名称</label>
+                        <input type="text" class="form-control" name="task_name"
+                               placeholder="例：抖音热榜采集" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">目标链接</label>
+                        <input type="url" class="form-control" name="target_url"
+                               placeholder="https://www.douyin.com/hot" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">定时规则（Cron 表达式）</label>
+                        <input type="text" class="form-control" name="cron_rule"
+                               value="0 */2 * * *" placeholder="分 时 日 月 周">
+                        <div class="muted-text" style="margin-top:6px;">
+                            五段式：分钟 小时 日 月份 星期
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">创建任务</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

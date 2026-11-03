@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}编辑视频 - 短视频数据平台{% endblock %}
+{% block page_name %}数据编辑{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-title"><i class="bi bi-pencil-square"></i> 编辑视频数据</div>
+    <div class="page-desc">修改视频的标题与热度指标数值</div>
+</div>
+
+<div class="row g-3">
+    <!-- 编辑表单 -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-list-columns"></i> 数据字段</div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('video.edit_video', video_id=video.id) }}">
+                    <div class="mb-4">
+                        <label class="form-label">视频标题</label>
+                        <input type="text" class="form-control" name="title"
+                               value="{{ video.title }}" required>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label" style="font-size:13px;color:var(--text-main)">
+                            热度指标
+                        </label>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">播放量</label>
+                            <input type="number" class="form-control" name="play_count"
+                                   value="{{ video.play_count }}" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">点赞数</label>
+                            <input type="number" class="form-control" name="like_count"
+                                   value="{{ video.like_count }}" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">评论数</label>
+                            <input type="number" class="form-control" name="comment_count"
+                                   value="{{ video.comment_count }}" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">收藏数</label>
+                            <input type="number" class="form-control" name="collect_count"
+                                   value="{{ video.collect_count }}" min="0">
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg"></i> 保存修改
+                    </button>
+                    <a href="{{ url_for('video.video_list') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i> 返回列表
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 信息侧栏 -->
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header"><i class="bi bi-image"></i> 视频封面</div>
+            <div class="card-body text-center">
+                {% if video.cover_url %}
+                <img src="{{ video.cover_url }}" class="w-100"
+                     style="max-height:280px;object-fit:cover;border-radius:10px;"
+                     onerror="this.outerHTML='<div class=\'cover-empty\' style=\'width:100%;height:180px\'><i class=\'bi bi-image\'></i></div>'">
+                {% else %}
+                <div class="cover-empty" style="width:100%;height:180px"><i class="bi bi-image"></i></div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><i class="bi bi-info-circle"></i> 记录信息</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="info-label">记录 ID</span>
+                    <span class="info-value">#{{ video.id }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="info-label">采集时间</span>
+                    <span class="info-value">{{ video.crawl_time or '—' }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="info-label">发布时间</span>
+                    <span class="info-value">{{ video.publish_time or '—' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

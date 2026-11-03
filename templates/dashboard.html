@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}数据总览 - 短视频数据平台{% endblock %}
+{% block page_name %}数据总览仪表盘{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div class="page-title"><i class="bi bi-speedometer2"></i> 数据总览</div>
+    <div class="page-desc">系统已采集的短视频热度数据核心指标一览</div>
+</div>
+
+<!-- ===== 第一排：内容指标 ===== -->
+<div class="row g-3 mb-3">
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card sc-blue">
+            <div class="stat-icon"><i class="bi bi-play-circle"></i></div>
+            <div class="stat-label">总视频数</div>
+            <div class="stat-value">{{ stats.total_videos }}<span class="stat-unit">条</span></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card sc-green">
+            <div class="stat-icon"><i class="bi bi-eye"></i></div>
+            <div class="stat-label">总播放量</div>
+            <div class="stat-value">{{ "{:,.0f}".format(stats.total_plays) }}</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card sc-orange">
+            <div class="stat-icon"><i class="bi bi-hand-thumbs-up"></i></div>
+            <div class="stat-label">总点赞数</div>
+            <div class="stat-value">{{ "{:,.0f}".format(stats.total_likes) }}</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card sc-cyan">
+            <div class="stat-icon"><i class="bi bi-chat-dots"></i></div>
+            <div class="stat-label">总评论数</div>
+            <div class="stat-value">{{ "{:,.0f}".format(stats.total_comments) }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 第二排：其他指标 ===== -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card sc-purple">
+            <div class="stat-icon"><i class="bi bi-star"></i></div>
+            <div class="stat-label">总收藏数</div>
+            <div class="stat-value">{{ "{:,.0f}".format(stats.total_collects) }}</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card sc-rose">
+            <div class="stat-icon"><i class="bi bi-people"></i></div>
+            <div class="stat-label">创作者总数</div>
+            <div class="stat-value">{{ stats.total_authors }}<span class="stat-unit">位</span></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card sc-slate">
+            <div class="stat-icon"><i class="bi bi-collection"></i></div>
+            <div class="stat-label">采集任务数</div>
+            <div class="stat-value">{{ stats.total_tasks }}<span class="stat-unit">个</span></div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="stat-card sc-teal">
+            <div class="stat-icon"><i class="bi bi-play-circle-fill"></i></div>
+            <div class="stat-label">运行中任务</div>
+            <div class="stat-value">{{ stats.running_tasks }}<span class="stat-unit">个</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 快捷操作入口 ===== -->
+<div class="page-head" style="margin-top: 8px;">
+    <div class="page-title" style="font-size:17px;"><i class="bi bi-boxes"></i> 快捷入口</div>
+</div>
+<div class="row g-3">
+    <div class="col-lg-4 col-md-6">
+        <a href="{{ url_for('video.video_list') }}" class="entry-card">
+            <div class="entry-icon ei-blue"><i class="bi bi-list-ul"></i></div>
+            <div class="entry-title">榜单列表查询</div>
+            <div class="entry-desc">浏览视频数据 · 关键词与热度条件检索</div>
+        </a>
+    </div>
+    <div class="col-lg-4 col-md-6">
+        <a href="{{ url_for('chart.charts_page') }}" class="entry-card">
+            <div class="entry-icon ei-green"><i class="bi bi-graph-up"></i></div>
+            <div class="entry-title">可视化图表分析</div>
+            <div class="entry-desc">柱状图排行 · 折线趋势 · 词云分布</div>
+        </a>
+    </div>
+    <div class="col-lg-4 col-md-6">
+        <a href="{{ url_for('task.task_list') }}" class="entry-card">
+            <div class="entry-icon ei-orange"><i class="bi bi-gear"></i></div>
+            <div class="entry-title">采集任务管理</div>
+            <div class="entry-desc">任务启停控制 · 定时调度 · 手动执行</div>
+        </a>
+    </div>
+</div>
+{% endblock %}

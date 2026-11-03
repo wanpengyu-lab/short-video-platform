@@ -1,0 +1,52 @@
+# ===== 敏感信息：登录凭据与密钥（最高优先级）=====
+.env
+.env.local
+.env.*.local
+*.pkl
+douyin_cookies.pkl
+*cookies*.json
+*cookies*.txt
+
+# ===== 运行时产物 =====
+flask_session/
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+logs/
+
+# ===== 数据库与本地数据 =====
+*.db
+*.sqlite
+*.sqlite3
+
+# ===== IDE 与编辑器 =====
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# ===== 操作系统 =====
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ===== 大型二进制文件 =====
+chromedriver.exe
+geckodriver.exe
+*.exe
+
+# ===== 抓取缓存与中间产物 =====
+hot_page.html
+*.tmp
+
+# ===== Python 打包产物 =====
+build/
+dist/
+*.egg-info/
+venv/
+.venv/
+env/
+
+# ===== 归档目录（一次性脚本，不入库）=====
+_archive/

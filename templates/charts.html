@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}可视化图表 - 短视频数据平台{% endblock %}
+{% block page_name %}可视化图表分析{% endblock %}
+
+{% block extra_head %}
+{{ bar_js | safe }}
+{% endblock %}
+
+{% block content %}
+<div class="page-head d-flex justify-content-between align-items-start flex-wrap gap-3">
+    <div>
+        <div class="page-title"><i class="bi bi-graph-up"></i> 可视化图表分析</div>
+        <div class="page-desc">基于已入库数据渲染的多维度统计图表</div>
+    </div>
+    <!-- 排序维度切换 -->
+    <div class="dim-switch">
+        <a href="{{ url_for('chart.charts_page', order_by='like_count') }}"
+           class="{% if order_by == 'like_count' %}on{% endif %}">点赞数</a>
+        <a href="{{ url_for('chart.charts_page', order_by='play_count') }}"
+           class="{% if order_by == 'play_count' %}on{% endif %}">播放量</a>
+        <a href="{{ url_for('chart.charts_page', order_by='comment_count') }}"
+           class="{% if order_by == 'comment_count' %}on{% endif %}">评论数</a>
+        <a href="{{ url_for('chart.charts_page', order_by='collect_count') }}"
+           class="{% if order_by == 'collect_count' %}on{% endif %}">收藏数</a>
+    </div>
+</div>
+
+<!-- ===== 柱状图 ===== -->
+<div class="chart-block">
+    <div class="chart-head"><i class="bi bi-bar-chart-fill"></i> 短视频热度指标 Top10 排行</div>
+    <div class="chart-body">{{ bar_html | safe }}</div>
+</div>
+
+<!-- ===== 折线图 ===== -->
+<div class="chart-block">
+    <div class="chart-head"><i class="bi bi-graph-up-arrow"></i> 近30天短视频热度变化趋势</div>
+    <div class="chart-body">{{ line_html | safe }}</div>
+</div>
+
+<!-- ===== 词云图 ===== -->
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="chart-block" style="height: calc(100% - 0px);">
+            <div class="chart-head"><i class="bi bi-cloud-fill"></i> 视频标题高频词云</div>
+            <div class="chart-body">{{ wordcloud_html | safe }}</div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="chart-block" style="height: 100%;">
+            <div class="chart-head"><i class="bi bi-chat-text-fill"></i> 评论高频词云</div>
+            <div class="chart-body">{{ comment_wc_html | safe }}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
