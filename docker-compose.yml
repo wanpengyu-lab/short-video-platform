@@ -1,0 +1,37 @@
+# ============================================================
+# 短视频热门数据采集与可视化平台 - Docker Compose
+# 一条命令启动：Web 应用 + Nginx 反向代理
+# ============================================================
+
+services:
+  web:
+    build: .
+    container_name: short_video_web
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5000:5000"
+    volumes:
+      # 爬虫 Cookie 持久化（避免重建容器后丢失）
+      - ./douyin_cookies.pkl:/app/douyin_cookies.pkl
+      # Flask Session 持久化
+      - flask_session_data:/app/flask_session
+    # 连接宿主机上的 MySQL（.env 中 DB_HOST 设为 host.docker.internal）
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  nginx:
+    image: nginx:alpine
+    container_name: short_video_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./static:/app/static:ro
+    depends_on:
+      - web
+
+volumes:
+  flask_session_data:

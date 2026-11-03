@@ -56,8 +56,19 @@ class DouyinCrawler:
         options.add_argument(f'--user-agent={CRAWL_CONFIG["USER_AGENT_POOL"][0]}')
         options.add_argument('--window-size=1920,1080')
 
-        # 显式指定 ChromeDriver 路径（Windows 环境必须带 .exe 后缀）
-        service = Service(executable_path='./chromedriver.exe')
+        # 显式指定 ChromeDriver 路径。
+        # 说明：不能用 './chromedriver.exe' 这种相对路径——它依赖「从项目根目录启动」，
+        # 换个目录运行就会找不到文件。这里基于本模块位置推导项目根目录。
+        # 若根目录下不存在驱动文件，则回退交给 Selenium Manager 自动匹配下载
+        # （selenium >= 4.6 内置，跨平台通用）。
+        _project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+        _driver_name = 'chromedriver.exe' if os.name == 'nt' else 'chromedriver'
+        _driver_path = os.path.join(_project_root, _driver_name)
+        if os.path.exists(_driver_path):
+            service = Service(executable_path=_driver_path)
+        else:
+            print(f'[爬虫] 未找到 {_driver_path}，回退使用 Selenium Manager 自动管理驱动')
+            service = Service()
         self.driver = webdriver.Chrome(service=service, options=options)
         self.driver.implicitly_wait(10)
         self.interactive = interactive

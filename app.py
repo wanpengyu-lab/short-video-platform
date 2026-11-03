@@ -8,10 +8,25 @@ Flask 应用主工厂
   - 启动时自动完成数据库表结构迁移与默认账号初始化
 """
 
+import hmac
+import secrets
+
 from flask import Flask, redirect, url_for, session
 from flask_session import Session
 from config import FLASK_CONFIG
 from utils.helpers import hash_password
+
+
+def _get_csrf_token() -> str:
+    """
+    获取当前会话的 CSRF 令牌；不存在则生成并存入 session。
+    令牌与会话绑定，随用户登录状态存在，跨请求复用。
+    """
+    token = session.get('_csrf_token')
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session['_csrf_token'] = token
+    return token
 
 
 def create_app():
@@ -20,8 +35,10 @@ def create_app():
 
     # ===== Flask 基础配置 =====
     app.secret_key = FLASK_CONFIG['SECRET_KEY']
-    app.config['DEBUG'] = FLASK_CONFIG['DEBUG']
-    app.config['SESSION_TYPE'] = FLASK_CONFIG['SESSION_TYPE']
+    # 统一应用 FLASK_CONFIG 中的所有配置项（DEBUG、SESSION_* 等），
+    # 避免新增配置项时遗漏手动赋值。
+    for key, value in FLASK_CONFIG.items():
+        app.config[key] = value
 
     # 初始化 Session 扩展
     Session(app)
@@ -53,15 +70,40 @@ def create_app():
         """未登录也允许访问数据总览"""
         return redirect(url_for('dashboard.index'))
 
-    # ===== 全局模板上下文（顶栏显示当前日期） =====
+    # ===== 全局模板上下文（顶栏显示当前日期 + CSRF令牌）=====
     @app.context_processor
-    def inject_now():
+    def inject_globals():
         from datetime import datetime
         wk = {'Monday': '星期一', 'Tuesday': '星期二', 'Wednesday': '星期三',
               'Thursday': '星期四', 'Friday': '星期五', 'Saturday': '星期六',
               'Sunday': '星期日'}
         d = datetime.now()
-        return {'now_str': d.strftime('%Y年%m月%d日 ') + wk.get(d.strftime('%A'), '')}
+        return {
+            'now_str': d.strftime('%Y年%m月%d日 ') + wk.get(d.strftime('%A'), ''),
+            'csrf_token': _get_csrf_token(),
+        }
+
+    # ===== CSRF 防护：校验所有状态变更请求 =====
+    @app.before_request
+    def _protect_csrf():
+        """
+        对 POST / PUT / PATCH / DELETE 请求校验 CSRF 令牌，
+        防止第三方站点利用用户已登录的会话伪造提交（如删除视频、启停采集任务）。
+
+        令牌来源优先级：表单字段 csrf_token > 请求头 X-CSRFToken。
+        使用 compare_digest 做定长时间比较，避免计时侧信道。
+        """
+        from flask import request, abort
+        if request.method not in ('POST', 'PUT', 'PATCH', 'DELETE'):
+            return
+        # 只校验 HTML 表单提交；采集器等内部调用不带表单，跳过
+        if request.is_json:
+            return
+        expected = _get_csrf_token()
+        supplied = (request.form.get('csrf_token')
+                    or request.headers.get('X-CSRFToken') or '')
+        if not supplied or not hmac.compare_digest(supplied, expected):
+            abort(400, description='CSRF 令牌校验失败，请刷新页面后重试')
 
     # ===== 初始化数据库结构迁移与默认账号 =====
     with app.app_context():

@@ -1,0 +1,25 @@
+# 排除不需要进镜像的文件
+.git
+.gitignore
+.idea
+.vscode
+_archive
+venv
+.venv
+__pycache__
+*.pyc
+*.pyo
+flask_session
+*.log
+logs/
+*.exe
+chromedriver.exe
+hot_page.html
+*.tmp
+*.md
+Dockerfile
+docker-compose.yml
+.dockerignore
+.env
+.env.example
+*.pkl

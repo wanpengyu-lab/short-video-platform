@@ -15,6 +15,7 @@
             <div class="card-header"><i class="bi bi-list-columns"></i> 数据字段</div>
             <div class="card-body">
                 <form method="POST" action="{{ url_for('video.edit_video', video_id=video.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <div class="mb-4">
                         <label class="form-label">视频标题</label>
                         <input type="text" class="form-control" name="title"

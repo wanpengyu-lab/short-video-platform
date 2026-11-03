@@ -36,8 +36,30 @@ SQLALCHEMY_DATABASE_URI = (
 # ========== Flask 配置 ==========
 FLASK_CONFIG = {
     'SECRET_KEY': _env('SECRET_KEY', 'dev-only-insecure-key-change-me'),
-    'DEBUG': _env('DEBUG', 'True').lower() in ('1', 'true', 'yes'),
+    # 默认关闭调试模式。
+    # debug=True 会让 Werkzeug 在出错时渲染交互式调试页，
+    # 向访问者暴露栈帧、局部变量与源码，并可能提供代码执行控制台，
+    # 因此仅在明确需要时通过 .env 打开。
+    'DEBUG': _env('DEBUG', 'False').lower() in ('1', 'true', 'yes'),
     'SESSION_TYPE': 'filesystem',
+    # Session Cookie 安全属性
+    'SESSION_COOKIE_HTTPONLY': True,
+    'SESSION_COOKIE_SAMESITE': 'Lax',
+}
+
+# ========== Web 服务监听配置 ==========
+# 默认只监听本机回环地址，避免服务被同局域网内的其他设备访问。
+# 确需对外提供服务时，应在 .env 中显式设置 SERVER_HOST=0.0.0.0，
+# 并优先使用生产级 WSGI 服务器（如 waitress / gunicorn）而非 Flask 开发服务器。
+SERVER_CONFIG = {
+    'host': _env('SERVER_HOST', '127.0.0.1'),
+    'port': int(_env('SERVER_PORT', '5000')),
+}
+
+# ========== 登录安全配置 ==========
+LOGIN_CONFIG = {
+    'MAX_FAILED_ATTEMPTS': int(_env('LOGIN_MAX_ATTEMPTS', '5')),   # 允许的连续失败次数
+    'LOCKOUT_SECONDS': int(_env('LOGIN_LOCKOUT_SECONDS', '300')),  # 锁定时长（秒）
 }
 
 # ========== 采集配置（非敏感，保留在代码中）==========

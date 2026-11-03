@@ -71,7 +71,7 @@ class TaskScheduler:
             # 平台判断：当前已实现抖音热榜爬虫，其他平台记录日志跳过
             if 'douyin.com' in target_url:
                 from services.douyin_crawler import DouyinCrawler
-                crawler = DouyinCrawler(headless=False, interactive=False)
+                crawler = DouyinCrawler(headless=True, interactive=False)
                 try:
                     count = crawler.crawl_and_save(target_url)
                 finally:

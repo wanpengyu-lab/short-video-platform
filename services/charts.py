@@ -11,6 +11,52 @@ from pyecharts.charts import Bar, Line, WordCloud
 from models.database import Database
 
 
+# ========== 排序字段白名单（防SQL注入）==========
+# order_by 来自 URL 查询参数，且本页面为游客可访问路由，
+# 必须严格限制为已知列名。SQL 的列名无法用占位符参数化，
+# 因此只能通过白名单校验来防护。
+ALLOWED_ORDER_FIELDS = {
+    'like_count': '点赞数',
+    'play_count': '播放量',
+    'comment_count': '评论数',
+    'collect_count': '收藏数',
+}
+
+# 白名单外一律回退到的默认字段
+DEFAULT_ORDER_FIELD = 'like_count'
+
+
+def sanitize_order_field(order_by: str) -> str:
+    """
+    校验排序字段是否在白名单内，非法值回退为默认字段。
+    与 blueprints/video.py 中的同类校验保持一致的防护策略。
+    """
+    return order_by if order_by in ALLOWED_ORDER_FIELDS else DEFAULT_ORDER_FIELD
+
+
+# 图表文本中需要剔除的字符。
+# pyecharts 会把数据序列化为 JSON 并内嵌到 <script> 标签中，
+# 且不做 HTML 转义；模板层又使用 |safe 输出。
+# 因此来自外部抓取的标题/评论内容若含 < > 等字符，
+# 可能提前闭合 script 标签形成存储型 XSS。
+# 这些字符对词频统计与坐标轴显示无意义，直接剔除即可。
+_UNSAFE_CHARS = str.maketrans({
+    '<': None, '>': None, '"': None, "'": None,
+    '\\': None, '`': None, '{': None, '}': None,
+    '\n': None, '\r': None, '\t': None,
+})
+
+
+def safe_chart_text(text, max_len: int = 60) -> str:
+    """
+    清洗将要送入 pyecharts 的外部文本（视频标题、评论分词等）。
+    剔除可能破坏 JS/HTML 结构的字符，并限制长度。
+    """
+    if text is None:
+        return ''
+    return str(text).translate(_UNSAFE_CHARS).strip()[:max_len]
+
+
 class ChartService:
     """图表生成服务"""
 
@@ -19,9 +65,13 @@ class ChartService:
     def get_top10_bar(order_by: str = 'like_count') -> Bar:
         """
         生成Top10视频热度柱状图
-        参数：order_by - 排序字段（like_count / play_count / comment_count）
+        参数：order_by - 排序字段（like_count / play_count / comment_count / collect_count）
+              非白名单值会自动回退为 like_count，不抛异常
         """
-        # 从数据库查询Top10数据
+        # 白名单校验：杜绝将外部输入直接拼入 SQL
+        order_by = sanitize_order_field(order_by)
+
+        # 从数据库查询Top10数据（order_by 已通过白名单校验，此处拼接是安全的）
         sql = f"""
             SELECT v.title, v.{order_by} as count_value, a.nickname
             FROM video_info v
@@ -32,17 +82,17 @@ class ChartService:
         results = Database.execute_query(sql)
 
         # 提取标题和数值
-        titles = [r['title'][:15] + '...' if len(r['title']) > 15 else r['title'] for r in results]
-        values = [r['count_value'] for r in results]
+        # 标题来自外部抓取内容，必须经 safe_chart_text 清洗后再送入 pyecharts，
+        # 否则含 < > 的标题可提前闭合 <script> 形成存储型 XSS。
+        # 同时兼容 title 为 NULL 的情况（原实现 len(None) 会抛 TypeError）。
+        titles = []
+        for r in results:
+            t = safe_chart_text(r.get('title'), max_len=15)
+            titles.append(t + '...' if len(str(r.get('title') or '')) > 15 else t)
+        values = [int(r['count_value'] or 0) for r in results]
 
-        # 字段中文映射
-        field_names = {
-            'like_count': '点赞数',
-            'play_count': '播放量',
-            'comment_count': '评论数',
-            'collect_count': '收藏数'
-        }
-        field_name = field_names.get(order_by, '热度')
+        # 字段中文映射（复用白名单字典，避免两处定义不一致）
+        field_name = ALLOWED_ORDER_FIELDS.get(order_by, '热度')
 
         # 生成柱状图
         bar = (
@@ -139,9 +189,13 @@ class ChartService:
                       '一个', '什么', '怎么', '如何', '可以', '还是', '但是', '因为', '所以'}
 
         for text in texts:
-            words = jieba.lcut(text)
+            # jieba 要求输入为字符串，兼容 NULL 值
+            words = jieba.lcut(str(text or ''))
             for word in words:
-                word = word.strip()
+                # 分词结果来自外部抓取的标题/评论，必须清洗后再送入 pyecharts。
+                # pyecharts 不做 HTML 转义，模板层又使用 |safe，
+                # 含 < > 的词可提前闭合 <script> 形成存储型 XSS。
+                word = safe_chart_text(word, max_len=30)
                 if len(word) >= 2 and word not in stop_words:
                     all_words.append(word)
 
