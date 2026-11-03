@@ -78,8 +78,8 @@ def _init_database():
     """
     数据库初始化与自动迁移：
     1. 检查 admin_user 表是否存在 role 字段，不存在则自动添加
-    2. 确保管理员账号 admin/admin123 存在且 role=admin
-    3. 确保普通用户账号 user/user123 存在且 role=user
+    2. 确保管理员账号存在且 role=admin（用户名/密码取自环境变量或 .env）
+    3. 确保普通用户账号存在且 role=user（用户名/密码取自环境变量或 .env）
     4. 明文密码自动升级为加密存储
     """
     from config import ADMIN_USER, NORMAL_USER
@@ -101,7 +101,7 @@ def _init_database():
         # ===== 第3步：确保普通用户账号存在且角色正确 =====
         _ensure_user(NORMAL_USER)
 
-        print("[初始化] 账号初始化完成（admin/admin123 管理员，user/user123 普通用户）")
+        print(f"[初始化] 账号初始化完成（管理员: {ADMIN_USER['username']}，普通用户: {NORMAL_USER['username']}；密码取自 .env）")
     except Exception as e:
         print(f"[初始化] 数据库初始化失败: {e}")
         print("[提示] 请先执行 init_db.sql 创建数据库和表结构")

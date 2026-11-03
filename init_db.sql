@@ -78,11 +78,19 @@ INSERT INTO crawl_task (task_name, target_url, status, cron_rule) VALUES
 ('短视频热榜采集', 'https://www.douyin.com/hot', '停止', '0 */2 * * *'),
 ('短视频评论采集', 'https://www.douyin.com/comments', '停止', '0 0 */6 * * *');
 
--- 插入默认账号（密码为明文，首次运行由Python脚本加密替换）
--- 管理员账号：admin / admin123
--- 普通用户账号：user / user123
-INSERT INTO admin_user (username, password, role) VALUES
-('admin', 'admin123', 'admin'),
-('user', 'user123', 'user');
+-- ========== 默认账号说明 ==========
+-- 本脚本不再插入任何账号，避免明文密码落库。
+-- 账号由应用启动时自动创建：app.py 的 _ensure_user() 会读取
+-- 环境变量 / .env 中的 ADMIN_USERNAME、ADMIN_PASSWORD、
+-- NORMAL_USERNAME、NORMAL_PASSWORD，并以加密形式写入 admin_user 表。
+--
+-- 使用步骤：
+--   1. 复制 .env.example 为 .env
+--   2. 在 .env 中填入你自己的账号与密码
+--   3. 执行本脚本建库建表
+--   4. 运行 python run.py，首次启动即自动创建账号
+--
+-- 如需手动重置某个账号密码，请勿在此写入明文，
+-- 改用项目提供的加密方式生成哈希后再更新。
 
-SELECT '数据库初始化完成！' AS message;
+SELECT '数据库初始化完成！账号将在应用首次启动时自动创建' AS message;
